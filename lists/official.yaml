@@ -2,6 +2,6 @@ title: Official packages
 description: List of official and maintained barnard59 packages
 packages:
   - name: barnard59-core
-    tags: []
+    repository: https://github.com/zazuko/barnard59-core
     maintainer: Zazuko GmbH
-    repo: https://github.com/zazuko/barnard59-core
+    tags: []
