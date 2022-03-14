@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import { PackageList, default as packageLists, Package } from "../../lib/lists";
+import { PackageList, default as packageLists } from "../../lib/lists";
 
 type Props = {
   listName: string;
@@ -12,7 +12,7 @@ const Page: NextPage<Props> = ({ listName, list }) => {
   const title = `barnard59 - ${listName} packages`;
   const description =
     list?.description || `barnard59 packages for the ${listName} list`;
-  const pkgs: Package[] = list.packages || [];
+  const pkgs: string[] = list.packages || [];
 
   return (
     <div>
@@ -32,9 +32,7 @@ const Page: NextPage<Props> = ({ listName, list }) => {
           <ul>
             {pkgs.map((pkg, index) => (
               <li key={index}>
-                <Link href={`/package/${listName}/${pkg.name}`}>
-                  {pkg.name}
-                </Link>
+                <Link href={`/package/${listName}/${pkg}`}>{pkg}</Link>
               </li>
             ))}
           </ul>

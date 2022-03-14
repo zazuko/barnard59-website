@@ -1,20 +1,22 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import {
-  PackageList,
-  default as packageLists,
-  Package,
-} from "../../../lib/lists";
+import { default as packageLists } from "../../../lib/lists";
+import { PackageInfo, packageInfo } from "../../../lib/package";
 
 type Props = {
   listName: string;
   name: string;
+  info: PackageInfo;
 };
 
-const Page: NextPage<Props> = ({ listName, name }) => {
+const Page: NextPage<Props> = ({ listName, name, info }) => {
   const title = `barnard59 - ${name}`;
   const description = `Documentation for the ${name} package`;
+
+  const packageName = info.name;
+  const packageVersion = info.version;
+  const packageDescription = info.description;
 
   return (
     <div>
@@ -26,9 +28,15 @@ const Page: NextPage<Props> = ({ listName, name }) => {
 
       <main>
         <h1>
-          This package is part of the{" "}
-          <Link href={`/package/${listName}`}>{listName}</Link> list
+          {packageName} <small>v{packageVersion}</small>
         </h1>
+
+        {packageDescription && <p>{packageDescription}</p>}
+
+        <p>
+          This package is part of the{" "}
+          <Link href={`/package/${listName}`}>{listName}</Link> list.
+        </p>
       </main>
 
       <footer>
@@ -42,23 +50,26 @@ export async function getStaticProps(context: any) {
   const listName = context.params.listName;
   const name = context.params.name;
 
+  const info = await packageInfo(name);
+
   return {
     props: {
       listName,
       name,
+      info,
     },
   };
 }
 
 export async function getStaticPaths() {
   const paths = Object.keys(packageLists).flatMap((listName) => {
-    const pkgs: Package[] = packageLists[listName]?.packages || [];
+    const pkgs: string[] = packageLists[listName]?.packages || [];
 
-    return pkgs.map((pkg) => {
+    return pkgs.map((pkgName) => {
       return {
         params: {
           listName,
-          name: pkg.name,
+          name: pkgName,
         },
       };
     });
