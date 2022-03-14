@@ -36,7 +36,8 @@ const listSchema = S({
   required: ["title"],
 });
 
-export type PackageLists = Record<string, Validated<typeof listSchema>>;
+export type PackageList = Validated<typeof listSchema>;
+export type PackageLists = Record<string, PackageList>;
 
 const listSchemaParser = new TsjsonParser(listSchema);
 

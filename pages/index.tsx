@@ -7,7 +7,7 @@ type Props = {
   lists: PackageLists;
 };
 
-const Home: NextPage<Props> = ({ lists }) => {
+const Page: NextPage<Props> = ({ lists }) => {
   return (
     <div className={styles.container}>
       <Head>
@@ -78,4 +78,4 @@ export async function getStaticProps(_context: any) {
   };
 }
 
-export default Home;
+export default Page;
