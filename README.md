@@ -1,4 +1,8 @@
-# Generate `barnard59` website
+# `barnard59` website
+
+## Add/edit lists
+
+You can create a new list of barnard59 packages or edit an existing one in the `lists` directory.
 
 ## Develop
 
