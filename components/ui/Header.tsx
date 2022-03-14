@@ -2,6 +2,7 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
+import Link from "next/link";
 
 const Component: React.FC = () => {
   return (
@@ -9,7 +10,9 @@ const Component: React.FC = () => {
       <AppBar position="static">
         <Container maxWidth="xl">
           <Toolbar disableGutters>
-            <Typography variant="h6">barnard59</Typography>
+            <Typography variant="h6">
+              <Link href="/">barnard59</Link>
+            </Typography>
           </Toolbar>
         </Container>
       </AppBar>
