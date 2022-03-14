@@ -14,3 +14,11 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.capitalize:first-letter {
+  text-transform: uppercase;
+}
+
+.pointer {
+  cursor: pointer;
+}
