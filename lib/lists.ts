@@ -36,6 +36,7 @@ const listSchema = S({
   required: ["title"],
 });
 
+export type Package = Validated<typeof packageSchema>;
 export type PackageList = Validated<typeof listSchema>;
 export type PackageLists = Record<string, PackageList>;
 
