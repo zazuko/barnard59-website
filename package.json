@@ -11,6 +11,9 @@
   "dependencies": {
     "@rdfjs/fetch": "^3.0.0",
     "@rdfjs/namespace": "^2.0.0",
+    "carbon-components": "^10.55.1",
+    "carbon-components-react": "^7.55.1",
+    "carbon-icons": "^7.0.7",
     "clownface": "^1.4.0",
     "next": "12.1.0",
     "rdf-ext": "^2.0.1",
