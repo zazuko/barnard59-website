@@ -2,15 +2,21 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { default as packageLists } from "../../../lib/lists";
-import { PackageInfo, packageInfo } from "../../../lib/package";
+import {
+  PackageInfo,
+  packageInfo,
+  PackageOperations,
+  packageOperations,
+} from "../../../lib/package";
 
 type Props = {
   listName: string;
   name: string;
   info: PackageInfo;
+  operations: PackageOperations;
 };
 
-const Page: NextPage<Props> = ({ listName, name, info }) => {
+const Page: NextPage<Props> = ({ listName, name, info, operations }) => {
   const title = `barnard59 - ${name}`;
   const description = `Documentation for the ${name} package`;
 
@@ -37,6 +43,21 @@ const Page: NextPage<Props> = ({ listName, name, info }) => {
           This package is part of the{" "}
           <Link href={`/package/${listName}`}>{listName}</Link> list.
         </p>
+
+        {operations.length <= 0 && (
+          <p>This package does not define any operation.</p>
+        )}
+
+        {operations.length > 0 && (
+          <>
+            <h2>Operations</h2>
+            <ul>
+              {operations.map((op, index) => {
+                return <li key={index}>{op.label}</li>;
+              })}
+            </ul>
+          </>
+        )}
       </main>
 
       <footer>
@@ -51,12 +72,14 @@ export async function getStaticProps(context: any) {
   const name = context.params.name;
 
   const info = await packageInfo(name);
+  const operations = await packageOperations(name);
 
   return {
     props: {
       listName,
       name,
       info,
+      operations,
     },
   };
 }
