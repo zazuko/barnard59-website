@@ -1,4 +1,4 @@
-# Generate `barnard59` web documentation
+# Generate `barnard59` website
 
 ## Develop
 
