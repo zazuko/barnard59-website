@@ -30,13 +30,15 @@ const Page: NextPage<Props> = ({ lists }) => {
           </Link>
         </Breadcrumbs>
         <h1>Packages collections</h1>
-        {listNames.map((l, index) => {
-          return (
-            <p key={index}>
-              <Link href={`/package/${l}`}>{l}</Link>
-            </p>
-          );
-        })}
+        {listNames
+          .filter((l) => lists[l].packages.length > 0)
+          .map((l, index) => {
+            return (
+              <p key={index}>
+                <Link href={`/package/${l}`}>{l}</Link>
+              </p>
+            );
+          })}
       </main>
     </div>
   );
