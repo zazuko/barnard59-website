@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.8.2",
+    "@emotion/styled": "^11.8.1",
+    "@mui/material": "^5.5.1",
     "@rdfjs/fetch": "^3.0.0",
     "@rdfjs/namespace": "^2.0.0",
     "clownface": "^1.4.0",

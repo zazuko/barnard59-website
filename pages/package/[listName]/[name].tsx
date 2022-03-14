@@ -1,3 +1,4 @@
+import Breadcrumbs from "@mui/material/Breadcrumbs";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
@@ -34,6 +35,17 @@ const Page: NextPage<Props> = ({ listName, name, info, operations }) => {
       </Head>
 
       <main>
+        <Breadcrumbs aria-label="breadcrumb">
+          <Link href="/">Home</Link>
+          <Link href="/package">Packages</Link>
+          <Link href={`/package/${listName}`}>{listName}</Link>
+          <Link
+            href={`/package/${listName}/${packageName}`}
+            aria-current="page"
+          >
+            {packageName}
+          </Link>
+        </Breadcrumbs>
         <h1>
           {packageName} <small>v{packageVersion}</small>
         </h1>
@@ -47,10 +59,6 @@ const Page: NextPage<Props> = ({ listName, name, info, operations }) => {
 
         <Operations list={operations} />
       </main>
-
-      <footer>
-        <p></p>
-      </footer>
     </div>
   );
 };
