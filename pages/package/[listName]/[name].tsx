@@ -1,6 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
+import Operations from "../../../components/Operations";
 import { default as packageLists } from "../../../lib/lists";
 import {
   PackageInfo,
@@ -44,20 +45,7 @@ const Page: NextPage<Props> = ({ listName, name, info, operations }) => {
           <Link href={`/package/${listName}`}>{listName}</Link> list.
         </p>
 
-        {operations.length <= 0 && (
-          <p>This package does not define any operation.</p>
-        )}
-
-        {operations.length > 0 && (
-          <>
-            <h2>Operations</h2>
-            <ul>
-              {operations.map((op, index) => {
-                return <li key={index}>{op.label}</li>;
-              })}
-            </ul>
-          </>
-        )}
+        <Operations list={operations} />
       </main>
 
       <footer>
