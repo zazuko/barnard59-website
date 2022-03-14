@@ -1,3 +1,4 @@
+import Editor from "@monaco-editor/react";
 import { PackageOperation } from "../lib/package";
 
 type Props = {
@@ -12,11 +13,26 @@ const Component: React.FC<Props> = ({ operation }) => {
 
   const label = operation.label;
   const comment = operation.comment;
+  const snippet = operation.snippet;
 
   return (
     <>
       <h3>{label}</h3>
       {comment && <p>{comment}</p>}
+      {snippet && (
+        <Editor
+          options={{
+            readOnly: true,
+            fontSize: 18,
+            wordWrap: "on",
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+          }}
+          theme="vs-dark"
+          defaultValue={snippet}
+          height="200px"
+        />
+      )}
     </>
   );
 };

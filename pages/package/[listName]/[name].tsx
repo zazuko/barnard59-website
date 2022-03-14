@@ -52,11 +52,6 @@ const Page: NextPage<Props> = ({ listName, name, info, operations }) => {
 
         {packageDescription && <p>{packageDescription}</p>}
 
-        <p>
-          This package is part of the{" "}
-          <Link href={`/package/${listName}`}>{listName}</Link> list.
-        </p>
-
         <Operations list={operations} />
       </main>
     </div>
