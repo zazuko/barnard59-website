@@ -1,10 +1,11 @@
+import { FC } from 'react';
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Link from "next/link";
 
-const Component: React.FC = () => {
+const Component: FC = () => {
   return (
     <>
       <AppBar position="static">

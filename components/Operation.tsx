@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import Editor from "@monaco-editor/react";
 import { PackageOperation } from "../lib/package";
 
@@ -5,7 +6,7 @@ type Props = {
   operation: PackageOperation;
 };
 
-const Component: React.FC<Props> = ({ operation }) => {
+const Component: FC<Props> = ({ operation }) => {
   // if no operation or if no label was defined, ignore the render
   if (!operation || !operation.label) {
     return null;

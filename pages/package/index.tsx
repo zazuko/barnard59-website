@@ -44,7 +44,7 @@ const Page: NextPage<Props> = ({ lists }) => {
                   {lists[l].packages.map((p, index) => {
                     return (
                       <li key={index}>
-                        <Link href={`/package/${l}/${p}`}>{p}</Link>
+                        <Link href={`/package/${l}/${p}`}>{`${p}`}</Link>
                       </li>
                     );
                   })}

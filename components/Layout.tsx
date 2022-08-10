@@ -1,7 +1,12 @@
+import { FC, ReactNode } from 'react';
 import Content from "./ui/Content";
 import Header from "./ui/Header";
 
-const Component: React.FC = ({ children }) => {
+type Props = {
+  children: ReactNode;
+};
+
+const Component: FC<Props> = ({ children }) => {
   return (
     <>
       <Header />

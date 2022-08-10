@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { PackageOperations } from "../lib/package";
 import Operation from "./Operation";
 
@@ -5,7 +6,7 @@ type Props = {
   list: PackageOperations;
 };
 
-const Component: React.FC<Props> = ({ list }) => {
+const Component: FC<Props> = ({ list }) => {
   // if no operation, ignore the render
   if (!list || list.length <= 0) {
     return null;

@@ -1,6 +1,11 @@
+import { FC, ReactNode } from 'react';
 import Container from "@mui/material/Container";
 
-const Component: React.FC = ({ children }) => {
+type Props = {
+  children: ReactNode;
+}
+
+const Component: FC<Props> = ({ children }) => {
   return <Container maxWidth="xl">{children}</Container>;
 };
 
