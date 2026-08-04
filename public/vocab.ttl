@@ -1,0 +1,18 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix b59: <https://barnard59.zazuko.com/vocab#>
+
+b59:CliCommand
+  a rdfs:Class ;
+  rdfs:label "Dynamic command for barnard59's CLI" ;
+.
+
+b59:command
+  rdfs:domain b59:CliCommand ;
+  rdfs:label "Command name" ;
+.
+
+b59:source
+  rdfs:domain b59:CliCommand ;
+  rdfs:label "Path to the source file" ;
+  rdfs:comment "It must be a literal with a path relative to installation directory (node_modules)" ;
+.

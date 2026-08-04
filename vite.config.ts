@@ -45,7 +45,11 @@ export default defineConfig({
         concurrency: 8,
         retryCount: 2,
       },
-      pages: dynamicPages.map((path) => ({ path })),
+      pages: [
+        ...dynamicPages.map((path) => ({ path })),
+        // A redirect to the docs; nothing for a crawler to index.
+        { path: "/vocab", sitemap: { exclude: true } },
+      ],
       /**
        * GitHub Pages serves `404.html` for any path it cannot find, so that
        * file has to work at *any* URL. Emit the route-agnostic SPA shell there
