@@ -39,6 +39,7 @@ export const Route = createFileRoute("/operations/")({
       title: "Operations",
       description: `Every barnard59 pipeline operation in one place — ${stats.operations} steps across ${stats.packages} packages, filterable by kind and package.`,
       path: "/operations",
+      turtle: true,
     }),
 });
 
@@ -93,6 +94,14 @@ function OperationsIndex() {
           <p className="mt-4 max-w-2xl text-lead text-muted">
             All {stats.operations} steps declared across {stats.packages}{" "}
             packages. Filter by kind or package, or search by name.
+          </p>
+          <p className="mt-5">
+            <a
+              href="/operations.ttl"
+              className="text-muted text-sm hover:text-fg"
+            >
+              All of it as one Turtle file ↓
+            </a>
           </p>
         </div>
       </header>

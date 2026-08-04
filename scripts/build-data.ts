@@ -19,6 +19,7 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import PrefixMap from "@rdfjs/prefix-map/PrefixMap.js";
 import TurtleSerializer from "@rdfjs/serializer-turtle";
+import type { Quad } from "@rdfjs/types";
 import env from "@zazuko/env-node";
 import YAML from "yaml";
 import { z } from "zod";
@@ -129,6 +130,9 @@ const STRUCTURAL_VOCABULARIES = [
 
 /** Deepest level of nested sub-pipelines rendered on a command page. */
 const MAX_PIPELINE_DEPTH = 3;
+
+/** Used only in the banner comment of the merged Turtle documents. */
+const SITE_URL = "https://barnard59.zazuko.com";
 
 const language = ["en", "*"];
 
@@ -337,8 +341,11 @@ async function fetchManifest(name: string): Promise<Manifest | null> {
   }
 }
 
-/** An extracted item plus the RDF that describes it, served as `<page>.ttl`. */
-type Described<T> = { item: T; turtle?: string };
+/**
+ * An extracted item, the RDF served at `<page>.ttl`, and that same RDF as
+ * quads with blank nodes already scoped, ready to merge into the index files.
+ */
+type Described<T> = { item: T; turtle?: string; quads: Quad[] };
 
 function extractOperations(manifest: Manifest): Described<Operation>[] {
   const seen = new Set<string>();
@@ -380,6 +387,9 @@ function extractOperations(manifest: Manifest): Described<Operation>[] {
       for (let i = 2; seen.has(slug); i++) slug = `${base}-${i}`;
       seen.add(slug);
 
+      // Scope by IRI, not slug: slugs are only unique within their package.
+      const quads = scopeBlankNodes(describeQuads(operation), iri);
+
       return [
         {
           item: {
@@ -396,7 +406,8 @@ function extractOperations(manifest: Manifest): Described<Operation>[] {
             ...parseLink(link),
             snippet: buildSnippet({ implementation, link }),
           } satisfies Operation,
-          turtle: serializeDescription(operation),
+          turtle: serializeQuads(quads),
+          quads,
         },
       ];
     })
@@ -447,13 +458,13 @@ const TURTLE_PREFIXES = new PrefixMap(
  * those of any blank nodes they reach. That is exactly the RDF that describes
  * this one resource, which is what `<page>.ttl` should return.
  */
-function serializeDescription(node: Pointer): string | undefined {
-  if (!node.term) return undefined;
+function describeQuads(node: Pointer): Quad[] {
+  if (!node.term) return [];
 
   const dataset = node.dataset;
   const seen = new Set<string>();
 
-  const collect = (term: Parameters<typeof dataset.match>[0]) => {
+  const collect = (term: Parameters<typeof dataset.match>[0]): Quad[] => {
     const quads = [...dataset.match(term)];
     const all = [...quads];
     for (const quad of quads) {
@@ -468,11 +479,83 @@ function serializeDescription(node: Pointer): string | undefined {
     return all;
   };
 
-  const quads = collect(node.term);
+  return collect(node.term);
+}
+
+/**
+ * Rewrite blank node labels so they cannot collide once documents are merged.
+ *
+ * A blank node is only meaningful inside the document that declares it, so two
+ * files may each use `_:profile` for entirely unrelated things. Merging them
+ * naively fuses those into one node. Prefixing every label with the resource it
+ * came from keeps them apart, and makes the labels stable across builds.
+ */
+function scopeBlankNodes(quads: Quad[], scope: string): Quad[] {
+  const renamed = new Map<string, ReturnType<typeof env.blankNode>>();
+  const prefix = scope.replace(/[^a-zA-Z0-9]+/g, "_");
+
+  function rename<T extends Quad["subject"] | Quad["object"]>(term: T): T {
+    if (term.termType !== "BlankNode") return term;
+    let replacement = renamed.get(term.value);
+    if (!replacement) {
+      replacement = env.blankNode(`${prefix}_${renamed.size}`);
+      renamed.set(term.value, replacement);
+    }
+    return replacement as T;
+  }
+
+  return quads.map((quad) =>
+    env.quad(
+      rename(quad.subject),
+      quad.predicate,
+      rename(quad.object),
+      quad.graph,
+    ),
+  );
+}
+
+/** Drop exact duplicates, which merging separate documents can produce. */
+function dedupe(quads: Quad[]): Quad[] {
+  const seen = new Set<string>();
+  return quads.filter((quad) => {
+    const key = [quad.subject, quad.predicate, quad.object]
+      .map((term) => `${term.termType} ${term.value}`)
+      .join("");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Named IRIs described by more than one source get merged into a single node.
+ * Blank nodes are scoped on the way in, so this is the only way two documents
+ * can still meet. It is usually intended — several cube pipelines genuinely
+ * share sub-queries — but it is worth surfacing rather than silently doing it.
+ */
+function sharedSubjects(groups: Array<{ from: string; quads: Quad[] }>) {
+  const sources = new Map<string, Set<string>>();
+
+  for (const { from, quads } of groups) {
+    for (const quad of quads) {
+      if (quad.subject.termType !== "NamedNode") continue;
+      const seen = sources.get(quad.subject.value) ?? new Set();
+      seen.add(from);
+      sources.set(quad.subject.value, seen);
+    }
+  }
+
+  return [...sources]
+    .filter(([, from]) => from.size > 1)
+    .map(([iri, from]) => ({ iri, from: [...from] }));
+}
+
+function serializeQuads(quads: Quad[], banner?: string): string | undefined {
   if (quads.length === 0) return undefined;
 
   const serializer = new TurtleSerializer({ prefixes: TURTLE_PREFIXES });
-  return `${serializer.transform(env.dataset(quads)).trimEnd()}\n`;
+  const body = `${serializer.transform(env.dataset(quads)).trimEnd()}\n`;
+  return banner ? `${banner}\n\n${body}` : body;
 }
 
 /**
@@ -647,8 +730,13 @@ async function parsePipeline(
   sourceCode: string,
   baseIRI: string,
   command: { slug: string; pipeline?: string },
-): Promise<{ steps: PipelineStep[]; variables: PipelineVariable[] }> {
-  const empty = { steps: [], variables: [] };
+): Promise<{
+  steps: PipelineStep[];
+  variables: PipelineVariable[];
+  /** The parsed pipeline, for merging into `/commands.ttl`. */
+  quads: Quad[];
+}> {
+  const empty = { steps: [], variables: [], quads: [] };
 
   try {
     const stream = env.formats.parsers.import(
@@ -680,6 +768,7 @@ async function parsePipeline(
     return {
       steps: readSteps(main, dataset, 0, new Set([`NamedNode:${main.value}`])),
       variables: readVariables(main),
+      quads: [...dataset],
     };
   } catch (error) {
     console.warn(
@@ -720,30 +809,39 @@ async function extractCommands(
             source: node.out(ns.b59.source).value,
             pipeline: node.out(ns.b59.pipeline).value,
           },
-          turtle: serializeDescription(node),
+          description: describeQuads(node),
         },
       ];
     })
     .sort((a, b) => a.command.slug.localeCompare(b.command.slug));
 
   return Promise.all(
-    commands.map(async ({ command, turtle }) => {
+    commands.map(async ({ command, description }) => {
       const sourceCode = await fetchCommandSource(command.source);
 
-      const { steps, variables } = sourceCode
+      const { steps, variables, quads } = sourceCode
         ? await parsePipeline(
             sourceCode,
             `https://unpkg.com/${command.source}`,
             command,
           )
-        : { steps: [], variables: [] };
+        : { steps: [], variables: [], quads: [] };
+
+      // The merged index carries both halves: what the command *is* (its
+      // `b59:CliCommand` statements) and what it *runs* (the pipeline).
+      // Scope by IRI, not slug: slugs are only unique within their package.
+      const scoped = [
+        ...scopeBlankNodes(description, `command ${command.iri}`),
+        ...scopeBlankNodes(quads, `pipeline ${command.iri}`),
+      ];
 
       return {
         item: { ...command, sourceCode, steps, variables },
         // A command *is* its pipeline, so `<page>.ttl` serves the runnable
-        // definition. Only when the package does not publish that file do we
-        // fall back to the command's own description from the manifest.
-        turtle: sourceCode ?? turtle,
+        // definition verbatim. Only when the package does not publish that
+        // file do we fall back to the command's description from the manifest.
+        turtle: sourceCode ?? serializeQuads(description),
+        quads: scoped,
       };
     }),
   );
@@ -755,8 +853,20 @@ async function readPackageNames(): Promise<string[]> {
   return [...new Set(packages)].sort((a, b) => a.localeCompare(b));
 }
 
-/** A resolved package plus the `<page path> → Turtle` pairs it contributes. */
-type ResolvedPackage = { pkg: Package; turtle: Record<string, string> };
+/**
+ * A resolved package: its data, the `<page path> → Turtle` pairs it
+ * contributes, and its quads for the merged `/operations.ttl`
+ * and `/commands.ttl`.
+ */
+type QuadGroup = { from: string; quads: Quad[] };
+
+type ResolvedPackage = {
+  pkg: Package;
+  turtle: Record<string, string>;
+  /** Grouped per page, so overlaps between documents can be detected. */
+  operationGroups: QuadGroup[];
+  commandGroups: QuadGroup[];
+};
 
 async function resolvePackage(name: string): Promise<ResolvedPackage | null> {
   try {
@@ -771,6 +881,36 @@ async function resolvePackage(name: string): Promise<ResolvedPackage | null> {
     const commands = manifest ? await extractCommands(manifest) : [];
 
     const turtle: Record<string, string> = {};
+
+    // Per-package roll-ups, mirroring the site-wide ones: everything this
+    // package declares, so a consumer can fetch one file instead of many.
+    const page = `${SITE_URL}/packages/${slug}`;
+    const operationQuads = dedupe(operations.flatMap((entry) => entry.quads));
+    const commandQuads = dedupe(commands.flatMap((entry) => entry.quads));
+
+    const rollups: Array<[string, Quad[], string]> = [
+      [
+        `/operation/${slug}`,
+        operationQuads,
+        `# Operations declared by ${info.name}\n# ${page}`,
+      ],
+      [
+        `/command/${slug}`,
+        commandQuads,
+        `# CLI commands provided by ${info.name}, with the pipeline each runs\n# ${page}`,
+      ],
+      [
+        `/packages/${slug}`,
+        dedupe([...operationQuads, ...commandQuads]),
+        `# Everything ${info.name} declares in RDF: operations and CLI commands\n# ${page}`,
+      ],
+    ];
+
+    for (const [path, quads, banner] of rollups) {
+      const text = serializeQuads(quads, banner);
+      if (text) turtle[path] = text;
+    }
+
     for (const { item, turtle: text } of operations) {
       if (text) turtle[`/operation/${slug}/${item.slug}`] = text;
     }
@@ -794,6 +934,14 @@ async function resolvePackage(name: string): Promise<ResolvedPackage | null> {
         commands: commands.map((entry) => entry.item),
       },
       turtle,
+      operationGroups: operations.map((entry) => ({
+        from: `/operation/${slug}/${entry.item.slug}`,
+        quads: entry.quads,
+      })),
+      commandGroups: commands.map((entry) => ({
+        from: `/command/${slug}/${entry.item.slug}`,
+        quads: entry.quads,
+      })),
     };
   } catch (error) {
     console.error(
@@ -854,6 +1002,37 @@ async function main() {
     {},
     ...successful.map((entry) => entry.turtle),
   );
+
+  // Merged index documents. Blank nodes were scoped per resource on the way in,
+  // so the only way two sources can meet here is by naming the same IRI — which
+  // is either intentional (shared sub-pipelines) or worth knowing about.
+  const merged = [
+    {
+      path: "/operations",
+      banner: `# Every operation documented at ${SITE_URL}/operations`,
+      groups: successful.flatMap((entry) => entry.operationGroups),
+    },
+    {
+      path: "/commands",
+      banner: [
+        `# Every CLI command documented at ${SITE_URL}/commands,`,
+        "# together with the pipeline each one runs.",
+      ].join("\n"),
+      groups: successful.flatMap((entry) => entry.commandGroups),
+    },
+  ];
+
+  for (const { path, banner, groups } of merged) {
+    const quads = dedupe(groups.flatMap((group) => group.quads));
+    const text = serializeQuads(quads, banner);
+    if (text) turtle[path] = text;
+
+    const shared = sharedSubjects(groups);
+    console.log(`  ${path}.ttl: ${quads.length} triples`);
+    for (const { iri, from } of shared) {
+      console.log(`    · ${iri} is described by ${from.join(" + ")}`);
+    }
+  }
 
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(registry, null, 2)}\n`);

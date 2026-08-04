@@ -17,6 +17,7 @@ export const Route = createFileRoute("/commands/")({
       title: "Commands",
       description: `Ready-made barnard59 pipelines you can run straight from the command line — ${stats.commands} commands across ${packagesWithCommands.length} packages.`,
       path: "/commands",
+      turtle: true,
     }),
 });
 
@@ -43,6 +44,14 @@ function CommandsIndex() {
           <div className="mt-7">
             <CommandLine command={`${CLI_BIN} --help`} />
           </div>
+          <p className="mt-5">
+            <a
+              href="/commands.ttl"
+              className="text-muted text-sm hover:text-fg"
+            >
+              Every command and its pipeline as one Turtle file ↓
+            </a>
+          </p>
         </div>
       </header>
 

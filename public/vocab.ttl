@@ -1,5 +1,5 @@
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix b59: <https://barnard59.zazuko.com/vocab#>
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+@prefix b59: <https://barnard59.zazuko.com/vocab#>
 
 b59:CliCommand
   a rdfs:Class ;

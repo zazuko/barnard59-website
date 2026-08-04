@@ -40,6 +40,7 @@ export const Route = createFileRoute("/packages/$pkg")({
         `${pkg.name} exposes ${pkg.operations.length} barnard59 ${plural(pkg.operations.length, "operation")}.`,
       path: `/packages/${pkg.slug}`,
       type: "article",
+      turtle: pkg.operations.length > 0 || pkg.commands.length > 0,
     });
   },
 });
@@ -133,6 +134,33 @@ function PackagePage() {
               </span>
             )}
           </div>
+
+          {(operations.length > 0 || commands.length > 0) && (
+            <p className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <a
+                href={`/packages/${pkg.slug}.ttl`}
+                className="text-muted hover:text-fg"
+              >
+                Everything as Turtle ↓
+              </a>
+              {operations.length > 0 && (
+                <a
+                  href={`/operation/${pkg.slug}.ttl`}
+                  className="text-muted hover:text-fg"
+                >
+                  Operations only ↓
+                </a>
+              )}
+              {commands.length > 0 && (
+                <a
+                  href={`/command/${pkg.slug}.ttl`}
+                  className="text-muted hover:text-fg"
+                >
+                  Commands only ↓
+                </a>
+              )}
+            </p>
+          )}
         </div>
       </header>
 
