@@ -17,6 +17,8 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
+import PrefixMap from "@rdfjs/prefix-map/PrefixMap.js";
+import TurtleSerializer from "@rdfjs/serializer-turtle";
 import env from "@zazuko/env-node";
 import YAML from "yaml";
 import { z } from "zod";
@@ -34,6 +36,12 @@ import type {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packagesFile = join(root, "packages.yaml");
 const outputPath = join(root, "src/data/registry.json");
+
+/**
+ * RDF descriptions, keyed by page path. Kept out of `registry.json` because
+ * only the build writes them out as `.ttl` files — the site never loads them.
+ */
+const turtlePath = join(root, "src/data/turtle.json");
 
 /** How long a cached registry stays usable for `--cached` (dev) runs. */
 const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -329,7 +337,10 @@ async function fetchManifest(name: string): Promise<Manifest | null> {
   }
 }
 
-function extractOperations(manifest: Manifest): Operation[] {
+/** An extracted item plus the RDF that describes it, served as `<page>.ttl`. */
+type Described<T> = { item: T; turtle?: string };
+
+function extractOperations(manifest: Manifest): Described<Operation>[] {
   const seen = new Set<string>();
 
   return manifest
@@ -371,22 +382,25 @@ function extractOperations(manifest: Manifest): Operation[] {
 
       return [
         {
-          slug,
-          iri,
-          label,
-          comment,
-          kind: operationKind(readable, writable),
-          readable,
-          writable,
-          objectMode: readableObject || writableObject,
-          implementation,
-          link,
-          ...parseLink(link),
-          snippet: buildSnippet({ implementation, link }),
-        } satisfies Operation,
+          item: {
+            slug,
+            iri,
+            label,
+            comment,
+            kind: operationKind(readable, writable),
+            readable,
+            writable,
+            objectMode: readableObject || writableObject,
+            implementation,
+            link,
+            ...parseLink(link),
+            snippet: buildSnippet({ implementation, link }),
+          } satisfies Operation,
+          turtle: serializeDescription(operation),
+        },
       ];
     })
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => a.item.label.localeCompare(b.item.label));
 }
 
 /**
@@ -417,6 +431,49 @@ async function fetchCommandSource(
 }
 
 type Pointer = ReturnType<Manifest["any"]>;
+
+const TURTLE_PREFIXES = new PrefixMap(
+  Object.entries({
+    b59: "https://barnard59.zazuko.com/vocab#",
+    code: "https://code.described.at/",
+    p: "https://pipeline.described.at/",
+    rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  }).map(([prefix, iri]) => [prefix, env.namedNode(iri)]),
+  { factory: env },
+);
+
+/**
+ * Serialise the Concise Bounded Description of a node: its own statements plus
+ * those of any blank nodes they reach. That is exactly the RDF that describes
+ * this one resource, which is what `<page>.ttl` should return.
+ */
+function serializeDescription(node: Pointer): string | undefined {
+  if (!node.term) return undefined;
+
+  const dataset = node.dataset;
+  const seen = new Set<string>();
+
+  const collect = (term: Parameters<typeof dataset.match>[0]) => {
+    const quads = [...dataset.match(term)];
+    const all = [...quads];
+    for (const quad of quads) {
+      if (
+        quad.object.termType === "BlankNode" &&
+        !seen.has(quad.object.value)
+      ) {
+        seen.add(quad.object.value);
+        all.push(...collect(quad.object));
+      }
+    }
+    return all;
+  };
+
+  const quads = collect(node.term);
+  if (quads.length === 0) return undefined;
+
+  const serializer = new TurtleSerializer({ prefixes: TURTLE_PREFIXES });
+  return `${serializer.transform(env.dataset(quads)).trimEnd()}\n`;
+}
 
 /**
  * Read a pipeline definition into a tree of steps.
@@ -632,7 +689,9 @@ async function parsePipeline(
   }
 }
 
-async function extractCommands(manifest: Manifest): Promise<Command[]> {
+async function extractCommands(
+  manifest: Manifest,
+): Promise<Described<Command>[]> {
   const seen = new Set<string>();
 
   const commands = manifest
@@ -653,19 +712,22 @@ async function extractCommands(manifest: Manifest): Promise<Command[]> {
 
       return [
         {
-          slug,
-          iri: node.value ?? "",
-          label: node.out(ns.rdfs.label, { language }).value ?? name,
-          comment: node.out(ns.rdfs.comment, { language }).value,
-          source: node.out(ns.b59.source).value,
-          pipeline: node.out(ns.b59.pipeline).value,
+          command: {
+            slug,
+            iri: node.value ?? "",
+            label: node.out(ns.rdfs.label, { language }).value ?? name,
+            comment: node.out(ns.rdfs.comment, { language }).value,
+            source: node.out(ns.b59.source).value,
+            pipeline: node.out(ns.b59.pipeline).value,
+          },
+          turtle: serializeDescription(node),
         },
       ];
     })
-    .sort((a, b) => a.slug.localeCompare(b.slug));
+    .sort((a, b) => a.command.slug.localeCompare(b.command.slug));
 
   return Promise.all(
-    commands.map(async (command) => {
+    commands.map(async ({ command, turtle }) => {
       const sourceCode = await fetchCommandSource(command.source);
 
       const { steps, variables } = sourceCode
@@ -676,7 +738,10 @@ async function extractCommands(manifest: Manifest): Promise<Command[]> {
           )
         : { steps: [], variables: [] };
 
-      return { ...command, sourceCode, steps, variables };
+      return {
+        item: { ...command, sourceCode, steps, variables },
+        turtle,
+      };
     }),
   );
 }
@@ -687,7 +752,10 @@ async function readPackageNames(): Promise<string[]> {
   return [...new Set(packages)].sort((a, b) => a.localeCompare(b));
 }
 
-async function resolvePackage(name: string): Promise<Package | null> {
+/** A resolved package plus the `<page path> → Turtle` pairs it contributes. */
+type ResolvedPackage = { pkg: Package; turtle: Record<string, string> };
+
+async function resolvePackage(name: string): Promise<ResolvedPackage | null> {
   try {
     const [info, manifest, downloadsLastMonth] = await Promise.all([
       fetchPackageInfo(name),
@@ -695,22 +763,34 @@ async function resolvePackage(name: string): Promise<Package | null> {
       fetchDownloads(name),
     ]);
 
+    const slug = packageSlug(info.name);
     const operations = manifest ? extractOperations(manifest) : [];
     const commands = manifest ? await extractCommands(manifest) : [];
 
+    const turtle: Record<string, string> = {};
+    for (const { item, turtle: text } of operations) {
+      if (text) turtle[`/operations/${slug}/${item.slug}`] = text;
+    }
+    for (const { item, turtle: text } of commands) {
+      if (text) turtle[`/command/${slug}/${item.slug}`] = text;
+    }
+
     return {
-      name: info.name,
-      slug: packageSlug(info.name),
-      version: info.version,
-      description: info.description,
-      license: info.license,
-      homepage: info.homepage,
-      repository: repositoryUrl(info.repository),
-      keywords: info.keywords ?? [],
-      npmUrl: `https://www.npmjs.com/package/${info.name}`,
-      downloadsLastMonth,
-      operations,
-      commands,
+      pkg: {
+        name: info.name,
+        slug,
+        version: info.version,
+        description: info.description,
+        license: info.license,
+        homepage: info.homepage,
+        repository: repositoryUrl(info.repository),
+        keywords: info.keywords ?? [],
+        npmUrl: `https://www.npmjs.com/package/${info.name}`,
+        downloadsLastMonth,
+        operations: operations.map((entry) => entry.item),
+        commands: commands.map((entry) => entry.item),
+      },
+      turtle,
     };
   } catch (error) {
     console.error(
@@ -740,7 +820,10 @@ async function main() {
 
   const resolved = await mapWithConcurrency(names, CONCURRENCY, resolvePackage);
 
-  const packages = resolved.filter((pkg): pkg is Package => pkg !== null);
+  const successful = resolved.filter(
+    (entry): entry is ResolvedPackage => entry !== null,
+  );
+  const packages = successful.map((entry) => entry.pkg);
   const failed = resolved.length - packages.length;
 
   if (failed > 0 && process.env.CI) {
@@ -764,14 +847,23 @@ async function main() {
     packages,
   };
 
+  const turtle: Record<string, string> = Object.assign(
+    {},
+    ...successful.map((entry) => entry.turtle),
+  );
+
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(registry, null, 2)}\n`);
+  await writeFile(turtlePath, `${JSON.stringify(turtle, null, 2)}\n`);
 
   const count = (pick: (pkg: Package) => unknown[]) =>
     packages.reduce((total, pkg) => total + pick(pkg).length, 0);
 
   console.log(
     `Wrote ${packages.length} packages, ${count((p) => p.operations)} operations and ${count((p) => p.commands)} commands to src/data/registry.json`,
+  );
+  console.log(
+    `Wrote ${Object.keys(turtle).length} RDF descriptions to src/data/turtle.json`,
   );
 }
 

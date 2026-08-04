@@ -33,6 +33,7 @@ export const Route = createFileRoute("/command/$pkg/$cmd")({
       description: command.label,
       path: command.href,
       type: "article",
+      turtle: true,
     });
   },
 });
@@ -173,6 +174,12 @@ function CommandPage() {
               <span className="block font-mono text-[0.8125rem] text-accent [overflow-wrap:anywhere]">
                 {command.iri}
               </span>
+              <a
+                href={`${command.href}.ttl`}
+                className="mt-1.5 inline-block text-muted text-xs hover:text-fg"
+              >
+                View as Turtle ↓
+              </a>
             </Row>
             <Row label="Subcommand">
               <span className="font-mono text-[0.8125rem]">{command.slug}</span>

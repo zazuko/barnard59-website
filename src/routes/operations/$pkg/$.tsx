@@ -31,6 +31,7 @@ export const Route = createFileRoute("/operations/$pkg/$")({
         `The ${operation.label} ${operation.kind} operation from ${operation.packageName}.`,
       path: operation.href,
       type: "article",
+      turtle: true,
     });
   },
 });
@@ -137,6 +138,12 @@ function OperationPage() {
               <span className="block font-mono text-[0.8125rem] text-accent [overflow-wrap:anywhere]">
                 {operation.iri}
               </span>
+              <a
+                href={`${operation.href}.ttl`}
+                className="mt-1.5 inline-block text-muted text-xs hover:text-fg"
+              >
+                View as Turtle ↓
+              </a>
             </Row>
             {operation.importPath && (
               <Row label="Module">
