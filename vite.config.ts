@@ -45,15 +45,18 @@ export default defineConfig({
         concurrency: 8,
         retryCount: 2,
       },
-      pages: [
-        ...dynamicPages.map((path) => ({ path })),
-        // GitHub Pages serves /404.html for any unmatched path.
-        {
-          path: "/404",
-          sitemap: { exclude: true },
-          prerender: { outputPath: "/404.html" },
-        },
-      ],
+      pages: dynamicPages.map((path) => ({ path })),
+      /**
+       * GitHub Pages serves `404.html` for any path it cannot find, so that
+       * file has to work at *any* URL. Emit the route-agnostic SPA shell there
+       * rather than a prerendered `/404` route: a prerendered route carries
+       * markup for its own path, and hydrating it under a different URL fails
+       * the router's location invariant and blanks the page.
+       */
+      spa: {
+        enabled: true,
+        prerender: { outputPath: "/404.html" },
+      },
       sitemap: {
         enabled: true,
         host: SITE_URL,
