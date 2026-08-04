@@ -1,0 +1,23 @@
+# Every barnard59 package documented on the website.
+#
+# Add a package name here and the build resolves the rest on its own: version,
+# description, license, repository and the pipeline operations declared in its
+# RDF manifest. See scripts/build-data.ts.
+packages:
+  - barnard59-base
+  - barnard59-carml
+  - barnard59-core
+  - barnard59-csvw
+  - barnard59-cube
+  - barnard59-formats
+  - barnard59-ftp
+  - barnard59-graph-store
+  - barnard59-http
+  - barnard59-n3
+  - barnard59-rdf
+  - barnard59-s3
+  - barnard59-shacl
+  - barnard59-shell
+  - barnard59-sparql
+  - barnard59-validate-shacl
+  - barnard59-validation

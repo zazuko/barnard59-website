@@ -1,0 +1,331 @@
+@import "tailwindcss";
+/* Fraunces keeps its optical-size axis (it earns it at display sizes); Inter
+   only needs weight, which is a noticeably smaller file. */
+@import "@fontsource-variable/fraunces/opsz.css";
+@import "@fontsource-variable/inter/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
+/* Dark mode is driven by a class on <html>, set before paint by an inline
+   script so there is no flash of the wrong theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Palette
+
+   Cool neutrals with an indigo accent, and a distinct hue per operation kind so
+   sources, transforms and sinks stay recognisable wherever they appear.
+--------------------------------------------------------------------------- */
+
+:root {
+  --c-bg: #fbfbfd;
+  --c-surface: #ffffff;
+  --c-raised: #ffffff;
+  --c-hover: #f5f6fa;
+  --c-fg: #14161c;
+  --c-muted: #5a6072;
+  --c-faint: #686e80;
+  --c-line: #e4e6ec;
+  --c-line-strong: #cfd3de;
+
+  --c-accent: #4f46e5;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: #eef0fe;
+
+  --c-source: #047857;
+  --c-transform: #4f46e5;
+  --c-sink: #be123c;
+
+  --c-source-soft: #e6f5f0;
+  --c-transform-soft: #eef0fe;
+  --c-sink-soft: #fdecf1;
+
+  --shadow-card: 0 1px 2px rgb(20 22 28 / 0.04);
+  --shadow-lift: 0 6px 24px -8px rgb(20 22 28 / 0.14);
+  --shadow-pop: 0 24px 60px -12px rgb(20 22 28 / 0.22);
+}
+
+.dark {
+  --c-bg: #0e1017;
+  --c-surface: #161923;
+  --c-raised: #1d2130;
+  --c-hover: #1d2130;
+  --c-fg: #e9ebf0;
+  --c-muted: #9aa1b4;
+  --c-faint: #8a90a4;
+  --c-line: #242836;
+  --c-line-strong: #363c4d;
+
+  --c-accent: #8b8bf5;
+  --c-accent-fg: #0e1017;
+  --c-accent-soft: #1e2038;
+
+  --c-source: #34d399;
+  --c-transform: #a5a5fb;
+  --c-sink: #fb7185;
+
+  --c-source-soft: #10231d;
+  --c-transform-soft: #1e2038;
+  --c-sink-soft: #2a1620;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-lift: 0 6px 24px -8px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 24px 60px -12px rgb(0 0 0 / 0.7);
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-hover: var(--c-hover);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+
+  --color-accent: var(--c-accent);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-accent-soft: var(--c-accent-soft);
+
+  --color-source: var(--c-source);
+  --color-transform: var(--c-transform);
+  --color-sink: var(--c-sink);
+  --color-source-soft: var(--c-source-soft);
+  --color-transform-soft: var(--c-transform-soft);
+  --color-sink-soft: var(--c-sink-soft);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
+  --shadow-pop: var(--shadow-pop);
+}
+
+@theme {
+  /* Fraunces carries the voice; Inter does the work; mono is for code. */
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  --text-display: clamp(2.75rem, 6.5vw, 5rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.021em;
+
+  --text-title: clamp(2rem, 4vw, 3.125rem);
+  --text-title--line-height: 1.08;
+  --text-title--letter-spacing: -0.018em;
+
+  --text-heading: clamp(1.375rem, 2.2vw, 1.875rem);
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.014em;
+
+  --text-lead: clamp(1.0625rem, 1.3vw, 1.1875rem);
+  --text-lead--line-height: 1.65;
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.5rem;
+
+  --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--c-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--c-bg);
+    color: var(--c-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fraunces carries an optical-size axis: let it adapt to the rendered size. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-weight: 600;
+  }
+
+  ::selection {
+    background-color: var(--c-accent-soft);
+    color: var(--c-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    /* `!important` is deliberate: this reset has to beat every utility. */
+    *,
+    *::before,
+    *::after {
+      /* biome-ignore-start lint/complexity/noImportantStyles: must override all motion */
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      /* biome-ignore-end lint/complexity/noImportantStyles: must override all motion */
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reusable pieces
+--------------------------------------------------------------------------- */
+
+@utility shell {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 2rem;
+  }
+}
+
+@utility eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/*
+ * The one hover gesture used across the site: a card settles up by a pixel,
+ * its border picks up the accent and a soft shadow appears. Nothing inverts.
+ */
+@utility card {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--c-line);
+  background-color: var(--c-surface);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color 0.18s var(--ease-soft),
+    box-shadow 0.18s var(--ease-soft),
+    transform 0.18s var(--ease-soft),
+    background-color 0.18s var(--ease-soft);
+}
+
+@utility card-interactive {
+  &:hover {
+    border-color: color-mix(in oklab, var(--c-accent) 45%, var(--c-line));
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* Quiet list rows: a tinted background and a sliding accent rail. */
+@utility listrow {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-control);
+  transition:
+    background-color 0.18s var(--ease-soft),
+    color 0.18s var(--ease-soft);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0.5rem;
+    inset-inline-start: 0;
+    width: 2px;
+    border-radius: 2px;
+    background-color: var(--c-accent);
+    opacity: 0;
+    transform: scaleY(0.4);
+    transition:
+      opacity 0.18s var(--ease-soft),
+      transform 0.18s var(--ease-soft);
+  }
+
+  &:hover {
+    background-color: var(--c-hover);
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Reveal-on-scroll driven entirely by the scroll timeline: no JavaScript, and
+   content stays fully visible where the feature or motion is unavailable. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility reveal {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 18%;
+    }
+  }
+}
+
+/* Soft indigo wash behind the hero. */
+@utility aurora {
+  background:
+    radial-gradient(
+      44rem 26rem at 12% -10%,
+      color-mix(in oklab, var(--c-accent) 16%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      36rem 22rem at 88% 0%,
+      color-mix(in oklab, var(--c-source) 12%, transparent),
+      transparent 70%
+    );
+}
+
+/* Turtle syntax highlighting, driven by classes from <Snippet>. */
+@utility tok-iri {
+  color: var(--c-accent);
+}
+
+@utility tok-prefix {
+  color: var(--c-fg);
+  font-weight: 600;
+}
+
+@utility tok-punct {
+  color: var(--c-faint);
+}
+
+@utility tok-string {
+  color: var(--c-source);
+}

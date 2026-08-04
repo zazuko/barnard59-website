@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://barnard59.zazuko.com/sitemap.xml

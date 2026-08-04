@@ -4,35 +4,66 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
+  # Package data is fetched at build time, so rebuild weekly to pick up new
+  # releases and operations without needing a code change.
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
-      - name: Set up NodeJS
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
-          node-version: "16"
+          node-version: lts/*
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Lint and check formatting
+        run: npm run lint
 
       - name: Build the website
         run: npm run build
 
-      - name: Disable Jekyll
-        run: touch ./out/.nojekyll
+      - name: Type check
+        run: npm run typecheck
 
-      - name: Create CNAME file
-        run: echo "barnard59.zazuko.com" > ./out/CNAME
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
         with:
-          branch: gh-pages
-          folder: out
+          path: dist/client
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
