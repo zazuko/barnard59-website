@@ -19,26 +19,41 @@ no server runs in production.
 
 ## URLs
 
+Plural paths are indexes, singular paths are single resources:
+
 ```
 /                            home
 /packages                    every package
 /packages/ftp                one package — barnard59-ftp
 /operations                  every operation, filterable
-/operations/ftp/list         one operation
+/operation/ftp/list          one operation
 /commands                    every CLI command
 /command/graph-store/put     one CLI command
 ```
 
-Package segments drop the `barnard59-` prefix. Operation paths come from the
-local part of the operation's IRI, so
-`https://barnard59.zazuko.com/operations/ftp/list` is both the operation's
-identifier in RDF and the page that documents it.
+Package segments drop the `barnard59-` prefix. An operation's path within its
+package comes from the local part of its IRI, so some nest more deeply than
+others: `/operation/formats/jsonld/parse`, `/operation/sparql/in-memory/query`.
 
-Some operations are nested more deeply because their IRIs are —
-`/operations/formats/jsonld/parse`, `/operations/sparql/in-memory/query`.
+## Turtle
 
-Command pages sit under the singular `/command/` to match their
-`b59:CliCommand` IRIs; the index is at `/commands`.
+Every operation and command page has a `.ttl` sibling:
+
+```
+/operation/ftp/list.ttl          the RDF describing that operation
+/command/graph-store/put.ttl     the pipeline definition the command runs
+```
+
+For an operation that is the Concise Bounded Description taken from its
+package's `manifest.ttl`. For a command it is the pipeline itself — the file
+`b59:source` points at — since that is the runnable artefact; a command whose
+package does not publish that file falls back to its manifest description.
+
+The files are written by `scripts/finalize-pages.ts` after the build, and each
+page advertises its own with `<link rel="alternate" type="text/turtle">`.
+
+Note that GitHub Pages may not serve `.ttl` as `text/turtle`; static hosting
+offers no way to set the header.
 
 ## Add a package
 

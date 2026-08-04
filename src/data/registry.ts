@@ -23,7 +23,7 @@ export function getPackage(slug: string): Package | undefined {
 export type OperationEntry = Operation & {
   packageName: string;
   packageSlug: string;
-  /** Path of the operation page, `/operations/<package>/<slug>`. */
+  /** Path of the operation page, `/operation/<package>/<slug>`. */
   href: string;
 };
 
@@ -32,7 +32,7 @@ function toEntry(pkg: Package, operation: Operation): OperationEntry {
     ...operation,
     packageName: pkg.name,
     packageSlug: pkg.slug,
-    href: `/operations/${pkg.slug}/${operation.slug}`,
+    href: `/operation/${pkg.slug}/${operation.slug}`,
   };
 }
 
@@ -46,7 +46,7 @@ export function getOperation(
   packageSlug: string,
   operationSlug: string,
 ): OperationEntry | undefined {
-  return operationsByHref.get(`/operations/${packageSlug}/${operationSlug}`);
+  return operationsByHref.get(`/operation/${packageSlug}/${operationSlug}`);
 }
 
 /**

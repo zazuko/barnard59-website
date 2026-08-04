@@ -740,7 +740,10 @@ async function extractCommands(
 
       return {
         item: { ...command, sourceCode, steps, variables },
-        turtle,
+        // A command *is* its pipeline, so `<page>.ttl` serves the runnable
+        // definition. Only when the package does not publish that file do we
+        // fall back to the command's own description from the manifest.
+        turtle: sourceCode ?? turtle,
       };
     }),
   );
@@ -769,7 +772,7 @@ async function resolvePackage(name: string): Promise<ResolvedPackage | null> {
 
     const turtle: Record<string, string> = {};
     for (const { item, turtle: text } of operations) {
-      if (text) turtle[`/operations/${slug}/${item.slug}`] = text;
+      if (text) turtle[`/operation/${slug}/${item.slug}`] = text;
     }
     for (const { item, turtle: text } of commands) {
       if (text) turtle[`/command/${slug}/${item.slug}`] = text;

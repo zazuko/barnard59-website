@@ -174,12 +174,6 @@ function CommandPage() {
               <span className="block font-mono text-[0.8125rem] text-accent [overflow-wrap:anywhere]">
                 {command.iri}
               </span>
-              <a
-                href={`${command.href}.ttl`}
-                className="mt-1.5 inline-block text-muted text-xs hover:text-fg"
-              >
-                View as Turtle ↓
-              </a>
             </Row>
             <Row label="Subcommand">
               <span className="font-mono text-[0.8125rem]">{command.slug}</span>
@@ -291,7 +285,20 @@ function CommandPage() {
 
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="eyebrow text-faint">The pipeline it runs</h2>
+            <h2 className="eyebrow text-faint">
+              The pipeline it runs
+              {command.sourceCode && (
+                <>
+                  {" · "}
+                  <a
+                    href={`${command.href}.ttl`}
+                    className="font-normal text-muted normal-case tracking-normal hover:text-fg"
+                  >
+                    raw .ttl ↓
+                  </a>
+                </>
+              )}
+            </h2>
 
             {/* Only offer the switch when there is something on both sides. */}
             {command.steps.length > 0 && command.sourceCode && (

@@ -16,7 +16,7 @@ const dynamicPages = [
   ...registry.packages.map((pkg) => `/packages/${pkg.slug}`),
   ...registry.packages.flatMap((pkg) =>
     pkg.operations.map(
-      (operation) => `/operations/${pkg.slug}/${operation.slug}`,
+      (operation) => `/operation/${pkg.slug}/${operation.slug}`,
     ),
   ),
   ...registry.packages.flatMap((pkg) =>

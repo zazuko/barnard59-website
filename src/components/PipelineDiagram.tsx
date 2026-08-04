@@ -101,7 +101,7 @@ function Step({
       <div className="pb-3">
         {operation ? (
           <Link
-            to="/operations/$pkg/$"
+            to="/operation/$pkg/$"
             params={{ pkg: operation.packageSlug, _splat: operation.slug }}
             className="card card-interactive block px-4 py-3"
           >

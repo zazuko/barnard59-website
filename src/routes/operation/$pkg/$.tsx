@@ -10,7 +10,7 @@ import {
 import { cn } from "~/lib/format.ts";
 import { seo } from "~/lib/seo.ts";
 
-export const Route = createFileRoute("/operations/$pkg/$")({
+export const Route = createFileRoute("/operation/$pkg/$")({
   loader: ({ params }) => {
     const operation = getOperation(params.pkg, params._splat ?? "");
     if (!operation) throw notFound();
@@ -200,7 +200,7 @@ function OperationPage() {
           previous={
             neighbours.previous && (
               <Link
-                to="/operations/$pkg/$"
+                to="/operation/$pkg/$"
                 params={{
                   pkg: neighbours.previous.packageSlug,
                   _splat: neighbours.previous.slug,
@@ -217,7 +217,7 @@ function OperationPage() {
           next={
             neighbours.next && (
               <Link
-                to="/operations/$pkg/$"
+                to="/operation/$pkg/$"
                 params={{
                   pkg: neighbours.next.packageSlug,
                   _splat: neighbours.next.slug,

@@ -39,7 +39,7 @@ export function CommandPalette() {
         });
       } else {
         navigate({
-          to: "/operations/$pkg/$",
+          to: "/operation/$pkg/$",
           params: { pkg: item.packageSlug, _splat: item.operationSlug },
         });
       }

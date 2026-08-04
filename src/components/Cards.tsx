@@ -69,7 +69,7 @@ export function OperationRow({
   return (
     <li>
       <Link
-        to="/operations/$pkg/$"
+        to="/operation/$pkg/$"
         params={{ pkg: operation.packageSlug, _splat: operation.slug }}
         className="listrow flex items-center gap-4 py-3.5 pr-3 pl-4"
       >
